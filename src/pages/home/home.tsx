@@ -132,7 +132,7 @@ const Home: React.FC = () => {
           </div>
 
           {/* Listas Recentes */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left mt-10">
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-6 text-left mt-10 mb-10">
             {/* Últimas Vendas */}
             <div className="bg-white shadow-md rounded-lg p-5 overflow-auto">
               <h2 className="text-lg font-semibold mb-3 text-blue-600">

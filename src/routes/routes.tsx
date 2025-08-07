@@ -18,6 +18,7 @@ import {
 } from '@heroicons/react/24/solid';
 import { BuildingOfficeIcon } from '@heroicons/react/24/outline';
 import type { RouteType } from '../types/routes';
+import { DocumentTextIcon } from '@heroicons/react/20/solid';
 
 const routesSidebar: RouteType[] = [
   {
@@ -43,6 +44,12 @@ const routesSidebar: RouteType[] = [
     title: 'Pedidos',
     text: 'Pedidos',
     icon: <ShoppingCartIcon className="h-5 w-5" />,
+  },
+   {
+    to: '/invoces',
+    title: 'Faturas',
+    text: 'Faturas',
+    icon: <DocumentTextIcon className="h-5 w-5" />,
   },
   {
     to: '/returns',

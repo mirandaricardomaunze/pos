@@ -9,12 +9,16 @@ import LoadingSpinner from './components/loading/LoadingSpinner';
 import { CartProvider } from './context/cartContext/cartContext';
 
 
+
+
 // Lazy-loaded pages
 const Home = lazy(() => import('./pages/home/home'));
 const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
 const BenefitsPage = lazy(() => import('./pages/Rh/BenefitsPage'));
 const Reports = lazy(() => import('./pages/reports/ReportPage'));
 const Profile = lazy(() => import('./pages/Profile/Profile'));
+const InvoiceForm = lazy(()=>import ('./components/invoice/InvoiceForm'))
+const InvoicesPage = lazy(()=>import ('./pages/invoice/InvoicePage'))
 const Pos = lazy(() => import('./pages/Pos/Pos'));
 const Login = lazy(() => import('./pages/userLogin/login'));
 const SignUp = lazy(() => import('./pages/userSignUp/signup'));
@@ -87,6 +91,22 @@ const App = () => {
                     element={
                       <ProtectedRoutes roles={['ADMIN', 'SELLER', 'MANAGER', 'USER', 'OPERATOR']}>
                         <ProductsPage />
+                      </ProtectedRoutes>
+                    }
+                  />
+                  <Route
+                    path="/invoices"
+                    element={
+                      <ProtectedRoutes roles={['ADMIN', 'SELLER', 'MANAGER']}>
+                        <InvoicesPage />
+                      </ProtectedRoutes>
+                    }
+                  />
+                   <Route
+                    path="/invoices/new"
+                    element={
+                      <ProtectedRoutes roles={['ADMIN', 'SELLER', 'MANAGER']}>
+                        <InvoiceForm />
                       </ProtectedRoutes>
                     }
                   />

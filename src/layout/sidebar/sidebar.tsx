@@ -2,7 +2,7 @@
 
 import { NavLink } from "react-router-dom";
 import { routesSidebar } from "../../routes/routes";
-import { XMarkIcon, Bars3Icon, ArrowRightOnRectangleIcon, BuildingOfficeIcon } from "@heroicons/react/24/solid";
+import { XMarkIcon, Bars3Icon, ArrowRightOnRectangleIcon } from "@heroicons/react/24/solid";
 import { useContextSideBar } from "../../context/contextsidebar/contextsidebar";
 import { useAuth } from "../../context/userContext/usercontext";
 import { useNavigate } from "react-router-dom";
@@ -75,10 +75,9 @@ const Sidebar = () => {
           style={{ scrollbarWidth: "none" }}
         >
           {/* Header */}
-          <header className="mb-2 mt-10 px-3   py-4 ">
-            <div className="flex flex-col items-center">
-              <BuildingOfficeIcon className="h-5 w-5 mb-2 text-white" />
-              <h1 className="text-xl font-bold text-center break-words w-full overflow-hidden text-ellipsis">{companyName || "Empresa"}</h1>
+          <header className="mb-1 mt-12 p-2 ">
+            <div className="flex flex-col  items-center">
+              <h1 className="text-xl font-bold text-center break-words w-full overflow-hidden text-ellipsis">{companyName.charAt(0) || "Empresa"}</h1>
             </div>
           </header>
 
