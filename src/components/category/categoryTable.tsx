@@ -33,6 +33,8 @@ const CategoryTable = () => {
         console.log('Fetching categories for company ID:', companyId);
 
         const response = await CategorieService.getCategoriesByCompanyId(companyId);
+        console.log( "Categorias ",response);
+        
         setCategory(Array.isArray(response) ? response : []);
       } catch (error) {
         console.error("Failed to fetch categories:", error);

@@ -10,6 +10,7 @@ import {
 import Button from '../ui/button';
 import { CategorieService } from '../../services/categorieService/categorieService';
 import { toast } from 'react-toastify';
+import Input from '../ui/input';
 
 type FormStatus = {
   type: 'success' | 'error' | null;
@@ -147,13 +148,12 @@ export default function CategoryForm() {
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                 Nome da Categoria *
               </label>
-              <input
+              <Input
                 type="text"
                 id="name"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
                 placeholder="Ex: Eletrônicos"
                 disabled={isSubmitting}
               />
@@ -173,7 +173,7 @@ export default function CategoryForm() {
                 rows={4}
                 value={formData.description}
                 onChange={handleInputChange}
-                className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+                className="block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150"
                 placeholder="Descreva brevemente esta categoria"
                 disabled={isSubmitting}
               />
@@ -195,8 +195,8 @@ export default function CategoryForm() {
               disabled={isSubmitting || !formData.name.trim()}
               className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ${
                 isSubmitting || !formData.name.trim() 
-                  ? 'bg-indigo-300 cursor-not-allowed' 
-                  : 'bg-indigo-600 hover:bg-indigo-700'
+                  ? 'bg-blue-300 cursor-not-allowed' 
+                  : 'bg-blue-600 hover:bg-blue-700'
               }`}
             >
               {isSubmitting ? (

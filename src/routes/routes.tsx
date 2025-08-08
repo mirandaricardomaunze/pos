@@ -46,7 +46,7 @@ const routesSidebar: RouteType[] = [
     icon: <ShoppingCartIcon className="h-5 w-5" />,
   },
    {
-    to: '/invoces',
+    to: '/invoices',
     title: 'Faturas',
     text: 'Faturas',
     icon: <DocumentTextIcon className="h-5 w-5" />,

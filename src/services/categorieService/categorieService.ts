@@ -11,10 +11,10 @@ export const CategorieService = {
     const response = await api.post('/categories', category);
     return response.data;
   },
-  updateCategory: async (id: number, category: Partial<Categories>): Promise<Categories> => {
-    const response = await api.put(`/categories${id}`, category);
-    return response.data;
-  },
+ updateCategory: async (id: number, category: Partial<Categories>): Promise<Categories> => {
+  const response = await api.put(`/categories/${id}`, category);
+  return response.data;
+},
   deleteCategory: async (id: string): Promise<void> => {
     await api.delete(`/categories/${id}`);
   },

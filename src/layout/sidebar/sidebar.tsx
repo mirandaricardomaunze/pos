@@ -76,8 +76,10 @@ const Sidebar = () => {
         >
           {/* Header */}
           <header className="mb-1 mt-12 p-2 ">
-            <div className="flex flex-col  items-center">
-              <h1 className="text-xl font-bold text-center break-words w-full overflow-hidden text-ellipsis">{companyName.charAt(0) || "Empresa"}</h1>
+            <div className="flex flex-col  ">
+              <h1 title={companyName} className="text-xl rounded-full w-5 h-5 bg-blue-500 p-5 border-white border-2 flex  justify-center items-center  font-bold text-center break-words  overflow-hidden text-ellipsis">
+                {companyName.charAt(0) || "Empresa"}
+              </h1>
             </div>
           </header>
 
