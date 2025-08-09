@@ -17,7 +17,7 @@ export const useProducts = () => {
           return;
         }
 
-        const res = await api.get(`/products/company/${companyId}`);
+        const res = await api.get(`/products/company`);
         setProducts(res.data);
       } catch (err) {
         console.error('Erro ao buscar produtos:', err);

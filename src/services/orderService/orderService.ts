@@ -107,4 +107,18 @@ export const orderService = {
     }
   },
 
+  getOrdersByDate: async (startDate: string, endDate: string): Promise<Order[]> => {
+  try {
+    const response = await api.get<Order[]>("/orders", {
+      params: { startDate, endDate }
+    });
+    return response.data;
+  } catch (error) {
+    toast.error("Erro ao buscar pedidos por data.");
+    console.error("getOrdersByDate Error:", error);
+    return [];
+  }
+},
+
+
 };

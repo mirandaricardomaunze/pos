@@ -17,6 +17,7 @@ import { formatCurrency } from '../../utils/formatCurrency';
 import LoadingSpinner from '../loading/LoadingSpinner';
 import { toast } from 'react-toastify';
 import Input from '../ui/input';
+import { MagnifyingGlassCircleIcon } from '@heroicons/react/24/solid';
 
 const OrderForm: React.FC = () => {
   const { products, loading: productsLoading } = useProducts();
@@ -30,6 +31,7 @@ const OrderForm: React.FC = () => {
   const [notes, setNotes] = useState<string>('');
   const [clientName, setClientName] = useState<string>('');
   const [selectedProduct, setSelectedProduct] = useState<number | ''>('');
+  const [productSearch, setProductSearch]=useState<string>("")
   const [paymentMethod, setPaymentMethod] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
   const [error, setError] = useState('');
@@ -150,7 +152,12 @@ const OrderForm: React.FC = () => {
     return sum + itemTotal * iva;
   }, 0);
 
+
   const total = subtotal + totalIva;
+
+  const filtredProducts=products
+  .filter((product)=>product.quantity>0)
+  .filter(product=>product.name.toLowerCase().includes(productSearch.toLowerCase().trim()))
 
   if (productsLoading || employeesLoading) {
     return <LoadingSpinner />;
@@ -161,9 +168,7 @@ const OrderForm: React.FC = () => {
       <div className="flex items-center justify-between mb-8">
         <Button
           onClick={() => navigate('/orders')}
-          className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium transition-colors"
           type="button"
-          variant="ghost"
         >
           <ArrowLeftIcon className="h-5 w-5" />
           Voltar
@@ -178,7 +183,18 @@ const OrderForm: React.FC = () => {
             <p className="font-medium">{error}</p>
           </div>
         )}
-
+        
+      <label className="block text-sm font-medium text-gray-700 mb-1">Pesquisar Produto</label>
+      <div className="relative mb-2">
+        <MagnifyingGlassCircleIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-5 w-5" />
+        <Input
+          type="text"
+          value={productSearch}
+          onChange={(e) => setProductSearch(e.target.value)}
+          placeholder="Digite para buscar produto"
+          className="w-full pl-10 rounded-lg border border-gray-300 py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+        />
+      </div>
         {/* Funcionário */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
@@ -230,7 +246,7 @@ const OrderForm: React.FC = () => {
                 className="w-full outline-0 rounded-lg border border-gray-300 py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               >
                 <option value="">Selecione um produto</option>
-                {products
+                {filtredProducts
                   .filter((product) => product.quantity > 0)
                   .map((product) => (
                     <option key={product.id} value={product.id}>
