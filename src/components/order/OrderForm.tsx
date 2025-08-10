@@ -147,7 +147,10 @@ const OrderForm: React.FC = () => {
   );
 
   const totalIva = orderItems.reduce((sum, item) => {
-    const iva = item.product.iva ?? 0;
+    let iva = item.product.iva ?? 0;
+    if (iva>0) {
+      iva=iva/100
+    }
     const itemTotal = item.product.sellingPrice * item.quantity;
     return sum + itemTotal * iva;
   }, 0);

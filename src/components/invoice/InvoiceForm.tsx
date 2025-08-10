@@ -1,35 +1,52 @@
-import React, { useState } from 'react';
-import { CheckIcon, XCircleIcon } from '@heroicons/react/24/solid';
-import { MagnifyingGlassCircleIcon } from '@heroicons/react/24/solid';
-import type { CreateInvoiceData } from '../../types/invoice';
-import invoiceService from '../../services/invoiceService/invoiceService';
-import {orderService} from '../../services/orderService/orderService'; // <-- precisa existir
-import { toast } from 'react-toastify';
-import { AxiosError } from 'axios';
-import type { Order } from '../../types/order';
+import React, { useState, useEffect } from "react";
+import { 
+  CheckIcon, 
+  XCircleIcon, 
+  MagnifyingGlassCircleIcon, 
+  DocumentTextIcon 
+} from "@heroicons/react/24/solid";
+import { useNavigate } from "react-router-dom";
+import type { CreateInvoiceData } from "../../types/invoice";
+import invoiceService from "../../services/invoiceService/invoiceService";
+import { orderService } from "../../services/orderService/orderService";
+import { toast } from "react-toastify";
+import type { Order } from "../../types/order";
+import Input from "../ui/input";
+import Button from "../ui/button";
 
 const InvoiceForm: React.FC = () => {
-  const [orderId, setOrderId] = useState<number | ''>('');
+  const navigate = useNavigate();
+  const [orderId, setOrderId] = useState<number | "">("");
   const [orders, setOrders] = useState<Order[]>([]);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
 
+  const clearMessages = () => {
+    setError(null);
+    setSuccess(null);
+  };
+
+  useEffect(() => {
+    if (orderId !== "") clearMessages();
+  }, [orderId]);
+
   const fetchOrders = async () => {
     if (!startDate || !endDate) {
-      toast.warn('Selecione as datas para buscar encomendas.');
-      return;
+      return toast.warn("Selecione as datas para buscar encomendas.");
     }
     try {
       setIsLoadingOrders(true);
       const data = await orderService.getOrdersByDate(startDate, endDate);
       setOrders(data);
+      setOrderId("");
     } catch (err) {
-      toast.error('Erro ao buscar encomendas.');
-      console.error(err);
+      const msg = err instanceof Error ? err.message : "Erro desconhecido";
+      setError(msg);
+      toast.error(`Erro ao buscar encomendas. ${msg}`);
     } finally {
       setIsLoadingOrders(false);
     }
@@ -37,130 +54,141 @@ const InvoiceForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (orderId === '') {
-      setError('Por favor, selecione ou insira um ID de pedido válido.');
-      setSuccess(null);
+    if (orderId === "") {
+      setError("Selecione ou insira um ID de pedido válido.");
       return;
     }
 
     try {
       setIsSubmitting(true);
-      const data: CreateInvoiceData = { orderId: Number(orderId) };
-      await invoiceService.createInvoice(data);
-      setSuccess('Fatura criada com sucesso!');
-      setError(null);
-      setOrderId('');
+      await invoiceService.createInvoice({ orderId: Number(orderId) } as CreateInvoiceData);
+      setSuccess("Fatura criada com sucesso!");
+      toast.success("Fatura criada com sucesso!");
+      setOrderId("");
+      setOrders([]);
+      setStartDate("");
+      setEndDate("");
     } catch (err) {
-      const axiosError = err as AxiosError<{ message: string }>;
-      setError(`Erro ao criar fatura. ${axiosError.response?.data?.message ?? ''}`);
-      setSuccess(null);
-      console.error(err);
+      const msg = err instanceof Error ? err.message : "Erro desconhecido";
+      setError(msg);
+      toast.error(`Erro ao criar fatura. ${msg}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleDateChange = (setter: (val: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setter(e.target.value);
+    setOrders([]);
+    setOrderId("");
+  };
+
   return (
     <form
       onSubmit={handleSubmit}
-      className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg border border-gray-200"
+      className="max-w-4xl mx-auto p-10 mb-15 bg-white rounded-2xl shadow-lg border border-gray-100"
       noValidate
     >
-      <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Criar Fatura</h2>
+      <div className="mb-8 text-center">
+        <h2 className="text-3xl font-bold text-gray-800">Criar Nova Fatura</h2>
+        <p className="text-gray-500 mt-2">Preencha os dados para gerar uma fatura</p>
+      </div>
 
-      {/* FILTRO POR DATA */}
-      <div className="mb-5 grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Data inicial</label>
-          <input
+          <label className="block text-sm font-medium text-gray-700 mb-1">Data inicial</label>
+          <Input
             type="date"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={handleDateChange(setStartDate)}
+            disabled={isSubmitting}
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Data final</label>
-          <input
+          <label className="block text-sm font-medium text-gray-700 mb-1">Data final</label>
+          <Input
             type="date"
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
+            onChange={handleDateChange(setEndDate)}
+            disabled={isSubmitting}
           />
         </div>
       </div>
 
-      <button
+      <Button
         type="button"
         onClick={fetchOrders}
-        disabled={isLoadingOrders}
-        className="w-full flex items-center justify-center gap-2 bg-gray-600 text-white py-2 rounded-md hover:bg-gray-700 transition disabled:opacity-50"
+        disabled={isLoadingOrders || isSubmitting}
+        className="w-full mb-8"
       >
-        <MagnifyingGlassCircleIcon className="w-5 h-5" />
-        {isLoadingOrders ? 'Buscando...' : 'Buscar encomendas'}
-      </button>
+        <MagnifyingGlassCircleIcon className="w-5 h-5 mr-2" />
+        {isLoadingOrders ? "Buscando..." : "Buscar Encomendas"}
+      </Button>
 
-      {/* SELECT DE ENCOMENDAS */}
       {orders.length > 0 && (
-        <div className="mt-4">
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Selecione a encomenda</label>
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Selecione a encomenda</label>
           <select
             onChange={(e) => setOrderId(Number(e.target.value))}
             value={orderId}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
+            disabled={isSubmitting}
+            className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
           >
-            <option value="">-- Selecione --</option>
-            {orders.map((order) => (
-              <option key={order.id} value={order.id}>
-                #{order.id} - {order.clientName} ({order.createdAt})
+            <option value="">Selecione a encomenda</option>
+            {orders.map(({ id, clientName, createdAt }) => (
+              <option key={id} value={id}>
+                #{id} - {clientName} ({new Date(createdAt).toLocaleDateString()})
               </option>
             ))}
           </select>
         </div>
       )}
 
-      {/* INPUT ID DO PEDIDO */}
-      <div className="mb-5 mt-4">
-        <label
-          htmlFor="orderId"
-          className="block text-sm font-semibold text-gray-700 mb-1"
-        >
+      <div className="mb-8">
+        <label htmlFor="orderId" className="block text-sm font-medium text-gray-700 mb-1">
           ID do Pedido
         </label>
-        <input
+        <Input
           id="orderId"
           type="number"
           min={1}
           value={orderId}
-          onChange={(e) => setOrderId(e.target.value === '' ? '' : Number(e.target.value))}
-          className="w-full rounded-md border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+          onChange={(e) => setOrderId(e.target.value === "" ? "" : Number(e.target.value))}
           placeholder="Digite ou selecione o ID do pedido"
-          required
           disabled={isSubmitting}
+          required
         />
       </div>
 
-      {/* BOTÃO SUBMIT */}
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full flex justify-center items-center gap-3 bg-blue-600 text-white font-semibold py-3 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 transition disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <CheckIcon className="h-6 w-6" />
-        {isSubmitting ? 'Processando...' : 'Criar Fatura'}
-      </button>
+      <div className="flex flex-col md:flex-row gap-4">
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="flex-1"
+        >
+          <CheckIcon className="h-5 w-5" />
+          {isSubmitting ? "Processando..." : "Criar Fatura"}
+        </Button>
 
-      {/* ALERTAS */}
+        <Button
+          type="button"
+          onClick={() => navigate("/invoices")}
+          className="flex-1 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100"
+        >
+          <DocumentTextIcon className="h-5 w-5 mr-2" />
+          Ver Tabela de Faturas
+        </Button>
+      </div>
+
       {success && (
-        <div className="flex items-center gap-3 bg-green-50 border border-green-400 text-green-700 rounded-md px-4 py-3 mt-5" role="alert">
-          <CheckIcon className="h-6 w-6 flex-shrink-0" />
+        <div className="flex items-start gap-3 bg-green-50 border border-green-200 text-green-700 rounded-lg p-4 mt-6">
+          <CheckIcon className="h-5 w-5 flex-shrink-0 mt-0.5" />
           <p className="text-sm">{success}</p>
         </div>
       )}
-
       {error && (
-        <div className="flex items-center gap-3 bg-red-50 border border-red-400 text-red-700 rounded-md px-4 py-3 mt-5" role="alert">
-          <XCircleIcon className="h-6 w-6 flex-shrink-0" />
+        <div className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 mt-6">
+          <XCircleIcon className="h-5 w-5 flex-shrink-0 mt-0.5" />
           <p className="text-sm">{error}</p>
         </div>
       )}
