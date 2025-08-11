@@ -26,22 +26,12 @@ const ProductsTable: React.FC = () => {
   const [productToEdit, setProductToEdit] = useState<ProductFormData | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [productIdToDelete, setProductIdToDelete] = useState<number | null>(null);
-  
-
- const companyId= useCallback(() => {
-    try {
-      const user = localStorage.getItem("user");
-      return user ? JSON.parse(user).companyId : null;
-    } catch {
-      return null;
-    }
- }, []);
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const data = await ProductService.getProductByCompanyId(Number(companyId()));
+        const data = await ProductService.getProductByCompanyId();
         setProducts(data);
         setTotalProducts(data.length);
         setError(null);
@@ -162,7 +152,7 @@ const ProductsTable: React.FC = () => {
                   }) || 'Mzn 0,00'}
                 </TableCell>
                 <TableCell className="text-right">
-                  {product.iva || 0}%
+                  {product.iva*100 || 0}%
                 </TableCell>
                 <TableCell className={`text-right font-medium ${
                   calculateProfit(product) >= 0 ? 'text-green-600' : 'text-red-600'

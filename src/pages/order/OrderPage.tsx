@@ -14,7 +14,7 @@ const OrderPage: React.FC = () => {
           </h1>
 
           <button
-            onClick={() => navigate('/orders/new')} // altere para a rota desejada
+            onClick={() => navigate('/orders/new')}
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded shadow"
           >
             Novo Pedido

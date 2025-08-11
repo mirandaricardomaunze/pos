@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ProductService } from '../../services/productService/productService';
 import type { SaleItem } from '../../types/saleItem';
 import type { ProductFormData } from '../../types/product';
@@ -42,7 +42,7 @@ const SalePage: React.FC = () => {
     const loadProducts = async () => {
       try {
         setIsLoading(true);
-        const data = await ProductService.getProductByCompanyId(Number(companyId));
+        const data = await ProductService.getProductByCompanyId();
         setProducts(data);
       } catch (err) {
         setError('Failed to load products');

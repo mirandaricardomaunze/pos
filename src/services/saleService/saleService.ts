@@ -102,6 +102,8 @@ class SalesService {
     try {
       const subtotal = this.calculateSubTotal();
       const vat = this.calculateVAT();
+      console.log("iva", vat);
+      
       return subtotal + vat;
     } catch (error) {
       toast.error("Erro ao calcular o total.");

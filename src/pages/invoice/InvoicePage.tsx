@@ -182,99 +182,132 @@ export default function InvoicesPage() {
     printWindow.document.close();
   };
 
-  // Exporta a fatura aberta no modal para PDF usando html2canvas + jsPDF
-  const handleExportPDF = async () => {
-    if (!invoiceRef.current || !selectedInvoice) return;
-
-    try {
-      // Clone para evitar interferência no DOM principal
-      const clone = invoiceRef.current.cloneNode(true) as HTMLElement;
-
-      // Ajuste básico para PDF: largura A4, padding e fonte legível
-      clone.style.width = '210mm';
-      clone.style.padding = '10mm';
-      clone.style.margin = '0 auto';
-      clone.style.boxSizing = 'border-box';
-      clone.style.fontFamily = 'Arial, sans-serif';
-      clone.style.backgroundColor = '#fff';
-
-      // Remove classes problemáticas do Tailwind (cores, hover, etc)
-      clone.querySelectorAll('*').forEach(el => {
-        const htmlEl = el as HTMLElement;
-        htmlEl.classList.remove('no-print');
-        Array.from(htmlEl.classList).forEach(className => {
-          if (
-            className.startsWith('bg-') ||
-            className.startsWith('text-') ||
-            className.startsWith('border-') ||
-            className.startsWith('hover:')
-          ) {
-            htmlEl.classList.remove(className);
-          }
-        });
-
-        // Adiciona estilos inline básicos para tabela
-        if (htmlEl.tagName === 'TABLE') {
-          htmlEl.style.borderCollapse = 'collapse';
-          htmlEl.style.width = '100%';
-        }
-        if (htmlEl.tagName === 'TH' || htmlEl.tagName === 'TD') {
-          htmlEl.style.border = '1px solid #ddd';
-          htmlEl.style.padding = '4px';
-        }
-        if (htmlEl.tagName === 'TH') {
-          htmlEl.style.backgroundColor = '#f5f5f5';
-        }
-      });
-
-      // Insere clone temporariamente no body (necessário para html2canvas funcionar direito)
-      clone.style.visibility = 'hidden';
-      document.body.appendChild(clone);
-
-      // Gera canvas da fatura
-      const canvas = await html2canvas(clone, {
-        logging: false,
-        useCORS: true,
-        allowTaint: true,
-      });
-
-      // Remove clone do DOM
-      document.body.removeChild(clone);
-
-      // Calcula tamanho para manter proporção e caber no A4
-      const imgData = canvas.toDataURL('image/png', 1.0);
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-
-      const imgProps = {
-        width: canvas.width,
-        height: canvas.height,
-      };
-
-      const pdfWidth = pageWidth - 20; // margem 10mm ambos lados
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-      let heightLeft = pdfHeight;
-      let position = 10;
-
-      pdf.addImage(imgData, 'PNG', 10, position, pdfWidth, pdfHeight);
-      heightLeft -= pageHeight;
-
-      // Caso a imagem seja maior que uma página, adiciona páginas extras
-      while (heightLeft > 0) {
-        position = heightLeft - pdfHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 10, position, pdfWidth, pdfHeight);
-        heightLeft -= pageHeight;
-      }
-
-      // Salva o arquivo com o número da fatura
-      pdf.save(`fatura-${selectedInvoice.orderId}.pdf`);
-    } catch (error) {
-      console.error('Erro ao gerar PDF:', error);
+// Função para copiar estilos computados inline em todos os elementos recursivamente
+function inlineStyles(element: HTMLElement) {
+  const applyStyles = (el: HTMLElement) => {
+    const computed = window.getComputedStyle(el);
+    for (let i = 0; i < computed.length; i++) {
+      const prop = computed[i];
+      el.style.setProperty(prop, computed.getPropertyValue(prop));
     }
+    el.childNodes.forEach(child => {
+      if (child instanceof HTMLElement) applyStyles(child);
+    });
   };
+  applyStyles(element);
+}
+
+
+const handleExportPDF = async () => {
+  if (!invoiceRef.current || !selectedInvoice) return;
+
+  try {
+    // Cria iframe isolado para renderização limpa (sem estilos externos)
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute'; // Off-screen em vez de display: none
+    iframe.style.left = '-9999px';
+    iframe.style.top = '-9999px';
+    iframe.style.width = '800px'; // Aproximado para A4 (210mm ~ 793px em 96dpi)
+    iframe.style.height = '1123px'; // Aproximado para A4 (297mm ~ 1123px)
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+    const iframeDoc = iframe.contentDocument!;
+    iframeDoc.open();
+    iframeDoc.write(`
+      <html>
+        <head>
+          <style>
+            body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: #fff; }
+            table { border-collapse: collapse; width: 100%; }
+            th, td { border: 1px solid #ddd; padding: 4px; }
+            th { background-color: #f5f5f5; }
+          </style>
+        </head>
+        <body></body>
+      </html>
+    `);
+    iframeDoc.close();
+
+    // Clona conteúdo do invoice e aplica estilos inline
+    const clone = invoiceRef.current.cloneNode(true) as HTMLElement;
+    inlineStyles(clone);
+
+    // Ajustes de estilo para o PDF
+    Object.assign(clone.style, {
+      width: '210mm',
+      padding: '10mm',
+      margin: '0 auto',
+      boxSizing: 'border-box',
+      backgroundColor: '#fff',
+    });
+
+    // Remove classes desnecessárias para evitar conflito visual
+    clone.querySelectorAll('*').forEach(el => {
+      const htmlEl = el as HTMLElement;
+      htmlEl.classList.remove('no-print');
+      Array.from(htmlEl.classList).forEach(className => {
+        if (['bg-', 'text-', 'border-', 'hover:'].some(prefix => className.startsWith(prefix))) {
+          htmlEl.classList.remove(className);
+        }
+      });
+    });
+
+    // Insere o clone no body do iframe
+    iframeDoc.body.appendChild(clone);
+
+    // Aguarda a renderização completa (aumentado para estabilidade)
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Captura a imagem do clone usando html2canvas
+    const canvas = await html2canvas(clone, {
+      logging: false,
+      useCORS: true,
+      allowTaint: true,
+      width: clone.scrollWidth,
+      height: clone.scrollHeight,
+    });
+
+    // Verificação de debug: Logue se o canvas tem tamanho (remova após teste)
+    console.log('Canvas size:', canvas.width, 'x', canvas.height);
+
+    // Remove iframe do DOM para limpeza
+    document.body.removeChild(iframe);
+
+    // Cria PDF usando jsPDF
+    const imgData = canvas.toDataURL('image/jpeg', 1.0); // Mude para JPEG como fallback (mais tolerante)
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+
+    // Define margens e escala da imagem no PDF
+    const margin = 10;
+    const pdfWidth = pageWidth - margin * 2;
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+    let heightLeft = pdfHeight;
+    let position = margin;
+
+    // Adiciona a primeira página
+    pdf.addImage(imgData, 'JPEG', margin, position, pdfWidth, pdfHeight); // Use 'JPEG' aqui também
+    heightLeft -= (pageHeight - margin * 2);
+
+    // Adiciona páginas extras se necessário
+    while (heightLeft > 0) {
+      pdf.addPage();
+      position = -(pdfHeight - heightLeft) + margin;
+      pdf.addImage(imgData, 'JPEG', margin, position, pdfWidth, pdfHeight);
+      heightLeft -= (pageHeight - margin * 2);
+    }
+
+    // Salva o arquivo com o nome baseado no pedido
+    pdf.save(`fatura-${selectedInvoice.orderId}.pdf`);
+  } catch (error) {
+    console.error('Erro ao gerar PDF:', error);
+  }
+};
+
+
+
 
   if (loading) return <LoadingSpinner />;
 
@@ -292,54 +325,56 @@ export default function InvoicesPage() {
         </button>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Pedido</TableHead>
-            <TableHead>Cliente</TableHead>
-            <TableHead>Valor</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Criado em</TableHead>
-            <TableHead>Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-
-        <TableBody>
-          {invoices.map((invoice) => (
-            <TableRow key={invoice.id} className="hover:bg-gray-50">
-              <TableCell>0{invoice.orderId}</TableCell>
-              <TableCell>{invoice.order?.clientName || 'Não informado'}</TableCell>
-              <TableCell>Mzn {invoice?.totalAmount?.toFixed(2) || '0.00'}</TableCell>
-              <TableCell>
-                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                  invoice.order?.status === 'PAGO'
-                    ? 'bg-green-100 text-green-800'
-                    : invoice.order?.status === 'PENDENTE'
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-gray-100 text-gray-800'
-                }`}>
-                  {invoice.order?.status || 'Desconhecido'}
-                </span>
-              </TableCell>
-              <TableCell>
-                {invoice.issuedAtISO
-                  ? new Date(invoice.issuedAtISO).toLocaleDateString('pt-MZ')
-                  : '—'}
-              </TableCell>
-              <TableCell>
-                <button
-                  onClick={() => handleOpenModal(invoice)}
-                  className="inline-flex items-center px-3 py-1 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition mr-2"
-                  aria-label={`Ver detalhes da fatura ${invoice.orderId}`}
-                >
-                  <EyeIcon className="h-4 w-4 mr-1" />
-                  Ver
-                </button>
-              </TableCell>
+      <div className="shadow-lg rounded-lg overflow-hidden bg-white"> {/* Container com sombras ao redor da tabela */}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Pedido</TableHead>
+              <TableHead>Cliente</TableHead>
+              <TableHead>Valor</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Criado em</TableHead>
+              <TableHead>Ações</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+
+          <TableBody>
+            {invoices.map((invoice) => (
+              <TableRow key={invoice.id} className="hover:bg-gray-50">
+                <TableCell>0{invoice.orderId}</TableCell>
+                <TableCell>{invoice.order?.clientName || 'Não informado'}</TableCell>
+                <TableCell>Mzn {invoice?.totalAmount?.toFixed(2) || '0.00'}</TableCell>
+                <TableCell>
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                    invoice.order?.status === 'PAGO'
+                      ? 'bg-green-100 text-green-800'
+                      : invoice.order?.status === 'PENDENTE'
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {invoice.order?.status || 'Desconhecido'}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  {invoice.issuedAtISO
+                    ? new Date(invoice.issuedAtISO).toLocaleDateString('pt-MZ')
+                    : '—'}
+                </TableCell>
+                <TableCell>
+                  <button
+                    onClick={() => handleOpenModal(invoice)}
+                    className="inline-flex items-center px-3 py-1 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition mr-2"
+                    aria-label={`Ver detalhes da fatura ${invoice.orderId}`}
+                  >
+                    <EyeIcon className="h-4 w-4 mr-1" />
+                    Ver
+                  </button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
 
       <Modal
         isOpen={isModalOpen}
@@ -402,7 +437,7 @@ export default function InvoicesPage() {
               </div>
 
               {/* Emitente e Cliente */}
-              <div style={{display:'flex ', justifyContent:'space-between'}} className="flex justify-between mb-4 gap-8">
+              <div style={{display: 'flex', justifyContent: 'space-between'}} className="flex justify-between mb-4 gap-8">
                 <div className="flex-1 bg-indigo-50 p-3 rounded-md">
                   <h3 className="text-[11px] font-semibold text-indigo-800 mb-1">EMITENTE</h3>
                   <p className="text-[11px] font-medium text-indigo-900">{companyDetails?.name}, LDA</p>
