@@ -19,13 +19,12 @@ useEffect(() => {
     <nav className="bg-blue-600 w-full sticky top-0 z-30 shadow-md">
       <div className="container mx-auto flex flex-wrap items-center justify-end p-2 xs:p-3">
          {/* Espaço vazio à esquerda para evitar sobreposição com o botão hamburguer */}
-         <div className="w-8 md:hidden"></div>
-         
+         <div className="w-8 md:hidden"></div>    
          {/* Nome do usuário no centro */}
-         <div className="flex items-center justify-center">
+         <div className="flex items-center justify-center text-sm">
            {loggedUser && (
-             <div className=" flex items-center justify-center bg-blue-500 text-white px-1 py-1 xs:px-3 xs:py-1  w-7 h-7 p-1 rounded-full border-white border-1 text-xs xs:text-sm sm:text-base truncate max-w-[120px] xs:max-w-[150px] sm:max-w-none">
-               <p className="truncate" title={loggedUser}>{loggedUser.charAt(0)}</p>
+             <div className=" flex   items-center justify-center bg-blue-500 text-white px-1 py-1 xs:px-3 xs:py-1  w-5 h-5 p-1 rounded-full border-white border-1 text-xs xs:text-sm sm:text-base truncate max-w-[120px] xs:max-w-[150px] sm:max-w-none">
+               <p className="truncate text-sm" title={loggedUser}>{loggedUser.charAt(0)}</p>
              </div>
            )}
          </div>

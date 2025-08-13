@@ -17,7 +17,7 @@ import Input from "../../components/ui/input";
 import LoadingSpinner from "../../components/loading/LoadingSpinner";
 import { toast } from "react-toastify";
 import { Pagination } from "../../components/pagination/pagination";
-import { Modal } from "../../components/modal/modal";
+import  Modal  from "../../components/modal/modal";
 import Button from "../../components/ui/button";
 
 export default function MovementsTable() {

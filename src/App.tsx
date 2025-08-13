@@ -7,6 +7,7 @@ import { ProtectedRoutes } from './components/protecteRoutes/ProtectedRoutes';
 import Layout from './layout/mainlayout/layout'; // Layout com <Outlet />
 import LoadingSpinner from './components/loading/LoadingSpinner';
 import { CartProvider } from './context/cartContext/cartContext';
+import MovementsPage from './pages/movements/MovementsPage';
 
 
 
@@ -134,7 +135,7 @@ const App = () => {
                   <Route path="/rh/trainings" element={<TrainingsPage />} />
                   <Route path="/rh/recruitment" element={<RecruitmentPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
-                  <Route path="/movements" element={<SupliersPage />} />
+                  <Route path="/movements" element={<MovementsPage />} />
                   <Route path="/new/product" element={<ProductForm />} />
                   <Route path="/suppliers/new" element={<SuppliersFormPage />} />
                   <Route path="/suppliers" element={<SupliersPage />} />

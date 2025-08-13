@@ -74,6 +74,22 @@ export interface Sale {
 }
 
 export interface SalesReport {
+  items: any;
   sales: Sale[];
   total: number;
 }
+
+// Tipos
+export type OrderReport = {
+  id: number;
+  clientName?: string;
+  status: string;
+  paymentMethod?: string;
+  createdAt: string;
+  total: number;
+  items:{
+    quantity:number;
+    price:number;
+  }[]
+};
+
