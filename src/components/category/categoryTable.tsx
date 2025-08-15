@@ -7,9 +7,9 @@ import LoadingSpinner from "../loading/LoadingSpinner";
 import { toast } from "react-toastify";
 import type { Categories } from "../../types/categories";
 import Button from "../ui/button";
-import  Modal  from "../modal/modal";
+import Modal from "../modal/modal";
 import { getCompanyIdFromToken } from "../../utils/getCompanyId/getCompanyId";
-
+import { Pagination } from "../pagination/pagination";
 
 const CategoryTable = () => {
   const [loading, setLoading] = useState(false);
@@ -19,22 +19,22 @@ const CategoryTable = () => {
   const [selectedCategory, setSelectedCategory] = useState<Categories | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editForm, setEditForm] = useState({ name: "", description: "" });
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5; // ajuste o número de itens por página
 
   useEffect(() => {
     const fetchCategories = async () => {
       setLoading(true);
       try {
-        const user= localStorage.getItem("user") ;
+        const user = localStorage.getItem("user");
         const companyId = user ? JSON.parse(user).companyId : getCompanyIdFromToken();
         if (!companyId) {
           toast.error("Empresa não identificada. Por favor, faça login novamente.");
           return;
         }
-        console.log('Fetching categories for company ID:', companyId);
 
         const response = await CategorieService.getCategoriesByCompanyId(companyId);
-        console.log( "Categorias ",response);
-        
         setCategory(Array.isArray(response) ? response : []);
       } catch (error) {
         console.error("Failed to fetch categories:", error);
@@ -71,9 +71,7 @@ const CategoryTable = () => {
       setLoading(true);
       const updated = await CategorieService.updateCategory(selectedCategory.id!, editForm);
       setCategory(prev =>
-        prev.map(catego =>
-          catego.id === updated.id ? updated : catego
-        )
+        prev.map(catego => catego.id === updated.id ? updated : catego)
       );
       toast.success("Categoria atualizada com sucesso!");
       setIsOpenModal(false);
@@ -93,6 +91,12 @@ const CategoryTable = () => {
       cat.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [category, searchTerm]);
+
+  // Paginação
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentCategories = filteredCategories.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.max(Math.ceil(filteredCategories.length / itemsPerPage), 1);
 
   return (
     <div className="overflow-x-auto">
@@ -122,14 +126,14 @@ const CategoryTable = () => {
                 <LoadingSpinner />
               </TableCell>
             </TableRow>
-          ) : filteredCategories.length === 0 ? (
+          ) : currentCategories.length === 0 ? (
             <TableRow>
               <TableCell colSpan={4} className="text-center">
                 Nenhuma categoria encontrada.
               </TableCell>
             </TableRow>
           ) : (
-            filteredCategories.map(cat => (
+            currentCategories.map(cat => (
               <TableRow key={cat.id}>
                 <TableCell>{cat.name}</TableCell>
                 <TableCell>{cat.description}</TableCell>
@@ -165,6 +169,15 @@ const CategoryTable = () => {
           )}
         </TableBody>
       </Table>
+
+      {/* Paginação */}
+      <div className="mt-4">
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      </div>
 
       <Modal
         isOpen={isOpenModal}

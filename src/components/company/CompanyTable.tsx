@@ -14,9 +14,12 @@ import {
 import Button from '../../components/ui/button';
 import { toast } from 'react-toastify';
 import companyService from '../../services/companyService/companyService';
+import { Pagination } from '../pagination/pagination';
 
 export default function CompanyTablePage() {
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
   const navigate = useNavigate();
 
   const fetchCompanies = async () => {
@@ -31,6 +34,12 @@ export default function CompanyTablePage() {
   useEffect(() => {
     fetchCompanies();
   }, []);
+
+  // Paginação
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentCompanies = companies.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.max(Math.ceil(companies.length / itemsPerPage), 1);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
@@ -47,39 +56,50 @@ export default function CompanyTablePage() {
 
       <div className="bg-white shadow-md rounded-lg p-6 w-auto">
         {companies.length === 0 ? (
-          <p className="text-gray-500 text-sm flex justify-center items-center">Nenhuma empresa cadastrada.</p>
+          <p className="text-gray-500 text-sm flex justify-center items-center">
+            Nenhuma empresa cadastrada.
+          </p>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>NUIT</TableHead>
-                <TableHead>Endereço</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {companies.map((company) => (
-                <TableRow key={company.id}>
-                  <TableCell>{company.name}</TableCell>
-                  <TableCell>{company.email}</TableCell>
-                  <TableCell>{company.phone}</TableCell>
-                  <TableCell>{company.Nuit}</TableCell>
-                  <TableCell>{company.address}</TableCell>
-                  <TableCell>
-                    <button
-                      onClick={() => navigate(`/empresas/editar/${company.id}`)}
-                      className="text-blue-500 hover:text-blue-700"
-                    >
-                      <PencilIcon className="h-5 w-5" />
-                    </button>
-                  </TableCell>
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Telefone</TableHead>
+                  <TableHead>NUIT</TableHead>
+                  <TableHead>Endereço</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {currentCompanies.map((company) => (
+                  <TableRow key={company.id}>
+                    <TableCell>{company.name}</TableCell>
+                    <TableCell>{company.email}</TableCell>
+                    <TableCell>{company.phone}</TableCell>
+                    <TableCell>{company.Nuit}</TableCell>
+                    <TableCell>{company.address}</TableCell>
+                    <TableCell>
+                      <button
+                        onClick={() => navigate(`/empresas/editar/${company.id}`)}
+                        className="text-blue-500 hover:text-blue-700"
+                      >
+                        <PencilIcon className="h-5 w-5" />
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {/* Paginação */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          </>
         )}
       </div>
     </div>

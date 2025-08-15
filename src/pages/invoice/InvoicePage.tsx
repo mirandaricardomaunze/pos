@@ -24,7 +24,7 @@ import Modal from '../../components/modal/modal';
 import Button from '../../components/ui/button';
 import type { Company } from '../../types/company';
 import companyService from '../../services/companyService/companyService';
-
+import { Pagination } from '../../components/pagination/pagination';
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -34,6 +34,10 @@ export default function InvoicesPage() {
   const invoiceRef = useRef<HTMLDivElement>(null);
   const [companyDetails, setCompanyDetails] = useState<Company>();
   const navigate = useNavigate();
+
+  // Estados para paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   // Pega o companyId do usuário armazenado no localStorage
   const getCompanyId = useCallback(() => {
@@ -96,11 +100,9 @@ export default function InvoicesPage() {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    // Clona o conteúdo para impressão para evitar modificações no DOM principal
     const contentToPrint = invoiceRef.current.cloneNode(true) as HTMLElement;
     contentToPrint.classList.add('invoice-container');
 
-    // Estilos para impressão
     const printStyles = `
       <style>
         @page {
@@ -182,132 +184,117 @@ export default function InvoicesPage() {
     printWindow.document.close();
   };
 
-// Função para copiar estilos computados inline em todos os elementos recursivamente
-function inlineStyles(element: HTMLElement) {
-  const applyStyles = (el: HTMLElement) => {
-    const computed = window.getComputedStyle(el);
-    for (let i = 0; i < computed.length; i++) {
-      const prop = computed[i];
-      el.style.setProperty(prop, computed.getPropertyValue(prop));
-    }
-    el.childNodes.forEach(child => {
-      if (child instanceof HTMLElement) applyStyles(child);
-    });
-  };
-  applyStyles(element);
-}
-
-
-const handleExportPDF = async () => {
-  if (!invoiceRef.current || !selectedInvoice) return;
-
-  try {
-    // Cria iframe isolado para renderização limpa (sem estilos externos)
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute'; // Off-screen em vez de display: none
-    iframe.style.left = '-9999px';
-    iframe.style.top = '-9999px';
-    iframe.style.width = '800px'; // Aproximado para A4 (210mm ~ 793px em 96dpi)
-    iframe.style.height = '1123px'; // Aproximado para A4 (297mm ~ 1123px)
-    iframe.style.border = '0';
-    document.body.appendChild(iframe);
-    const iframeDoc = iframe.contentDocument!;
-    iframeDoc.open();
-    iframeDoc.write(`
-      <html>
-        <head>
-          <style>
-            body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: #fff; }
-            table { border-collapse: collapse; width: 100%; }
-            th, td { border: 1px solid #ddd; padding: 4px; }
-            th { background-color: #f5f5f5; }
-          </style>
-        </head>
-        <body></body>
-      </html>
-    `);
-    iframeDoc.close();
-
-    // Clona conteúdo do invoice e aplica estilos inline
-    const clone = invoiceRef.current.cloneNode(true) as HTMLElement;
-    inlineStyles(clone);
-
-    // Ajustes de estilo para o PDF
-    Object.assign(clone.style, {
-      width: '210mm',
-      padding: '10mm',
-      margin: '0 auto',
-      boxSizing: 'border-box',
-      backgroundColor: '#fff',
-    });
-
-    // Remove classes desnecessárias para evitar conflito visual
-    clone.querySelectorAll('*').forEach(el => {
-      const htmlEl = el as HTMLElement;
-      htmlEl.classList.remove('no-print');
-      Array.from(htmlEl.classList).forEach(className => {
-        if (['bg-', 'text-', 'border-', 'hover:'].some(prefix => className.startsWith(prefix))) {
-          htmlEl.classList.remove(className);
-        }
+  // Função para copiar estilos computados inline
+  function inlineStyles(element: HTMLElement) {
+    const applyStyles = (el: HTMLElement) => {
+      const computed = window.getComputedStyle(el);
+      for (let i = 0; i < computed.length; i++) {
+        const prop = computed[i];
+        el.style.setProperty(prop, computed.getPropertyValue(prop));
+      }
+      el.childNodes.forEach(child => {
+        if (child instanceof HTMLElement) applyStyles(child);
       });
-    });
+    };
+    applyStyles(element);
+  }
 
-    // Insere o clone no body do iframe
-    iframeDoc.body.appendChild(clone);
+  const handleExportPDF = async () => {
+    if (!invoiceRef.current || !selectedInvoice) return;
 
-    // Aguarda a renderização completa (aumentado para estabilidade)
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'absolute';
+      iframe.style.left = '-9999px';
+      iframe.style.top = '-9999px';
+      iframe.style.width = '800px';
+      iframe.style.height = '1123px';
+      iframe.style.border = '0';
+      document.body.appendChild(iframe);
+      const iframeDoc = iframe.contentDocument!;
+      iframeDoc.open();
+      iframeDoc.write(`
+        <html>
+          <head>
+            <style>
+              body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: #fff; }
+              table { border-collapse: collapse; width: 100%; }
+              th, td { border: 1px solid #ddd; padding: 4px; }
+              th { background-color: #f5f5f5; }
+            </style>
+          </head>
+          <body></body>
+        </html>
+      `);
+      iframeDoc.close();
 
-    // Captura a imagem do clone usando html2canvas
-    const canvas = await html2canvas(clone, {
-      logging: false,
-      useCORS: true,
-      allowTaint: true,
-      width: clone.scrollWidth,
-      height: clone.scrollHeight,
-    });
+      const clone = invoiceRef.current.cloneNode(true) as HTMLElement;
+      inlineStyles(clone);
 
-    // Verificação de debug: Logue se o canvas tem tamanho (remova após teste)
-    console.log('Canvas size:', canvas.width, 'x', canvas.height);
+      Object.assign(clone.style, {
+        width: '210mm',
+        padding: '10mm',
+        margin: '0 auto',
+        boxSizing: 'border-box',
+        backgroundColor: '#fff',
+      });
 
-    // Remove iframe do DOM para limpeza
-    document.body.removeChild(iframe);
+      clone.querySelectorAll('*').forEach(el => {
+        const htmlEl = el as HTMLElement;
+        htmlEl.classList.remove('no-print');
+        Array.from(htmlEl.classList).forEach(className => {
+          if (['bg-', 'text-', 'border-', 'hover:'].some(prefix => className.startsWith(prefix))) {
+            htmlEl.classList.remove(className);
+          }
+        });
+      });
 
-    // Cria PDF usando jsPDF
-    const imgData = canvas.toDataURL('image/jpeg', 1.0); // Mude para JPEG como fallback (mais tolerante)
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
+      iframeDoc.body.appendChild(clone);
 
-    // Define margens e escala da imagem no PDF
-    const margin = 10;
-    const pdfWidth = pageWidth - margin * 2;
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-    let heightLeft = pdfHeight;
-    let position = margin;
+      const canvas = await html2canvas(clone, {
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        width: clone.scrollWidth,
+        height: clone.scrollHeight,
+      });
 
-    // Adiciona a primeira página
-    pdf.addImage(imgData, 'JPEG', margin, position, pdfWidth, pdfHeight); // Use 'JPEG' aqui também
-    heightLeft -= (pageHeight - margin * 2);
+      document.body.removeChild(iframe);
 
-    // Adiciona páginas extras se necessário
-    while (heightLeft > 0) {
-      pdf.addPage();
-      position = -(pdfHeight - heightLeft) + margin;
+      const imgData = canvas.toDataURL('image/jpeg', 1.0);
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      const margin = 10;
+      const pdfWidth = pageWidth - margin * 2;
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      let heightLeft = pdfHeight;
+      let position = margin;
+
       pdf.addImage(imgData, 'JPEG', margin, position, pdfWidth, pdfHeight);
       heightLeft -= (pageHeight - margin * 2);
+
+      while (heightLeft > 0) {
+        pdf.addPage();
+        position = -(pdfHeight - heightLeft) + margin;
+        pdf.addImage(imgData, 'JPEG', margin, position, pdfWidth, pdfHeight);
+        heightLeft -= (pageHeight - margin * 2);
+      }
+
+      pdf.save(`fatura-${selectedInvoice.orderId}.pdf`);
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
     }
+  };
 
-    // Salva o arquivo com o nome baseado no pedido
-    pdf.save(`fatura-${selectedInvoice.orderId}.pdf`);
-  } catch (error) {
-    console.error('Erro ao gerar PDF:', error);
-  }
-};
-
-
-
+  // Paginação - calcula fatias de dados
+  const totalPages = Math.ceil(invoices.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentInvoices = invoices.slice(startIndex, startIndex + itemsPerPage);
 
   if (loading) return <LoadingSpinner />;
 
@@ -325,7 +312,7 @@ const handleExportPDF = async () => {
         </button>
       </div>
 
-      <div className="shadow-lg rounded-lg overflow-hidden bg-white"> {/* Container com sombras ao redor da tabela */}
+      <div className="shadow-lg rounded-lg overflow-hidden bg-white">
         <Table>
           <TableHeader>
             <TableRow>
@@ -339,7 +326,7 @@ const handleExportPDF = async () => {
           </TableHeader>
 
           <TableBody>
-            {invoices.map((invoice) => (
+            {currentInvoices.map((invoice) => (
               <TableRow key={invoice.id} className="hover:bg-gray-50">
                 <TableCell>0{invoice.orderId}</TableCell>
                 <TableCell>{invoice.order?.clientName || 'Não informado'}</TableCell>
@@ -375,6 +362,14 @@ const handleExportPDF = async () => {
           </TableBody>
         </Table>
       </div>
+
+      {/* Paginação */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
+
 
       <Modal
         isOpen={isModalOpen}
@@ -472,7 +467,7 @@ const handleExportPDF = async () => {
                         selectedInvoice.order.items.map((item, idx) => (
                           <tr key={idx} className="border-b border-gray-200">
                             <td className="py-1 px-2 text-gray-800 border border-gray-200">
-                              {item.product?.name || 'Produto não especificado'}
+                              {item.product?.name || 'Produto não especificado'} - {item.product?.description }
                             </td>
                             <td className="py-1 px-2 text-right text-gray-600 border border-gray-200">
                               {item.quantity || 0}

@@ -13,10 +13,13 @@ import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../loading/LoadingSpinner';
 import { useNavigate } from 'react-router-dom';
+import { Pagination } from '../pagination/pagination';
 
 export default function CustomerTable() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -47,70 +50,87 @@ export default function CustomerTable() {
     }
   };
 
+  // Paginação
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentCustomers = customers.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.max(Math.ceil(customers.length / itemsPerPage), 1);
+
   return (
     <div className="max-w-6xl mx-auto bg-white p-6 rounded shadow mb-10 mt-10">
       {loading ? (
         <LoadingSpinner />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Telefone</TableHead>
-              <TableHead>NUIT</TableHead>
-              <TableHead>Ativo</TableHead>
-              <TableHead>Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {customers.length === 0 ? (
+        <>
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-4 text-gray-500">
-                  Nenhum cliente encontrado.
-                </TableCell>
+                <TableHead>Nome</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Telefone</TableHead>
+                <TableHead>NUIT</TableHead>
+                <TableHead>Ativo</TableHead>
+                <TableHead>Ações</TableHead>
               </TableRow>
-            ) : (
-              customers.map((c) => (
-                <TableRow key={c.id}>
-                  <TableCell>{c.name}</TableCell>
-                  <TableCell>{c.email || '—'}</TableCell>
-                  <TableCell>{c.phone || '—'}</TableCell>
-                  <TableCell>{c.nuit || '—'}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`px-2 py-1 text-xs rounded-full ${
-                        c.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {c.isActive ? 'Sim' : 'Não'}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => navigate(`/clientes/editar/${c.id}`)}
-                        className="text-blue-600 hover:text-blue-800"
-                        aria-label="Editar cliente"
-                        title="Editar cliente"
-                      >
-                        <PencilIcon className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(c.id)}
-                        className="text-red-600 hover:text-red-800"
-                        aria-label="Excluir cliente"
-                        title="Excluir cliente"
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                      </button>
-                    </div>
+            </TableHeader>
+            <TableBody>
+              {currentCustomers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-4 text-gray-500">
+                    Nenhum cliente encontrado.
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                currentCustomers.map((c) => (
+                  <TableRow key={c.id}>
+                    <TableCell>{c.name}</TableCell>
+                    <TableCell>{c.email || '—'}</TableCell>
+                    <TableCell>{c.phone || '—'}</TableCell>
+                    <TableCell>{c.nuit || '—'}</TableCell>
+                    <TableCell>
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full ${
+                          c.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {c.isActive ? 'Sim' : 'Não'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => navigate(`/clientes/editar/${c.id}`)}
+                          className="text-blue-600 hover:text-blue-800"
+                          aria-label="Editar cliente"
+                          title="Editar cliente"
+                        >
+                          <PencilIcon className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(c.id)}
+                          className="text-red-600 hover:text-red-800"
+                          aria-label="Excluir cliente"
+                          title="Excluir cliente"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+
+          {/* Paginação */}
+          <div className="mt-4">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          </div>
+        </>
       )}
     </div>
   );
